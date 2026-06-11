@@ -1,6 +1,6 @@
 # Breach Radar
 
-[![CI](https://github.com/Mentorzx/stormgroupchallenge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mentorzx/stormgroupchallenge/actions/workflows/ci.yml)
+[![CI](https://github.com/Mentorzx/stormgroupchallenge/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Mentorzx/stormgroupchallenge/actions/workflows/ci.yml)
 
 Breach Radar é uma API Python + PostgreSQL para sincronizar o catálogo público de data breaches da Have I Been Pwned (HIBP) e consultar esse cache local com filtros combináveis.
 
