@@ -13,8 +13,9 @@ Chamadas externas para HIBP são mockadas com `respx`. Nenhum teste depende de r
 - `POST /sync` persiste registros válidos.
 - `POST /sync` duas vezes atualiza sem duplicar.
 - `GET /health` retorna status simples.
+- `GET /ready` valida conexão básica com o banco.
 - `/openapi.json` expõe rotas, métodos, parâmetros de filtro e schema de resposta principal.
-- Testes E2E chamam `/health`, `/openapi.json` e `/breaches` por HTTP contra a API rodando no Compose.
+- Testes E2E chamam `/health`, `/ready`, `/openapi.json` e `/breaches` por HTTP contra a API rodando no Compose.
 - `GET /breaches` lista com paginação padrão.
 - `GET /breaches/{name}` retorna detalhe existente.
 - Filtros isolados: `domain`, `name`, datas, `data_class`, faixa de `pwn_count` e flags booleanas.

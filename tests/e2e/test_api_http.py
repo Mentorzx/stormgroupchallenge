@@ -18,10 +18,13 @@ def test_e2e_health_and_openapi_over_http() -> None:
 
     with httpx.Client(base_url=base_url, timeout=5.0) as client:
         health = client.get("/health")
+        ready = client.get("/ready")
         openapi = client.get("/openapi.json")
 
     assert health.status_code == 200
     assert health.json() == {"status": "ok"}
+    assert ready.status_code == 200
+    assert ready.json() == {"status": "ready"}
     assert openapi.status_code == 200
     assert "/breaches" in openapi.json()["paths"]
 

@@ -8,6 +8,13 @@ def test_health_returns_ok(client: TestClient) -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_ready_checks_database(client: TestClient) -> None:
+    response = client.get("/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready"}
+
+
 def test_openapi_is_exposed(client: TestClient) -> None:
     response = client.get("/openapi.json")
 
@@ -16,7 +23,7 @@ def test_openapi_is_exposed(client: TestClient) -> None:
     assert body["info"]["title"] == "Breach Radar"
 
     paths = body["paths"]
-    assert set(paths) >= {"/health", "/sync", "/breaches", "/breaches/{name}"}
+    assert set(paths) >= {"/health", "/ready", "/sync", "/breaches", "/breaches/{name}"}
     assert set(paths["/sync"]) == {"post"}
     assert set(paths["/breaches"]) == {"get"}
     assert set(paths["/breaches/{name}"]) == {"get"}

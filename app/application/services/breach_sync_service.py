@@ -70,9 +70,7 @@ class BreachSyncService:
         inserted = sum(1 for name in names if name not in existing_names)
         updated = sum(1 for name in names if name in existing_names)
 
-        with self.repository.session.begin_nested():
-            self.repository.upsert_many(rows)
-
+        self.repository.upsert_many(rows)
         self.repository.session.commit()
         duration_ms = round((time.perf_counter() - started) * 1000, 2)
         status = "partial_success" if ignored else "success"

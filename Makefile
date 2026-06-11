@@ -38,6 +38,7 @@ compile:
 
 smoke:
 	curl -f http://localhost:8000/health
+	curl -f http://localhost:8000/ready
 	curl -f http://localhost:8000/openapi.json
 
 e2e:

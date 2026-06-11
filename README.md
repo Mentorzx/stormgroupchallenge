@@ -55,6 +55,7 @@ A API fica em:
 - Swagger: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
 - Healthcheck: `http://localhost:8000/health`
+- Readiness com banco: `http://localhost:8000/ready`
 
 Serviços:
 
@@ -63,7 +64,7 @@ Serviços:
 
 O Compose fixa o projeto como `breach-radar`, evitando nomes gerados a partir da pasta local.
 
-O Dockerfile usa build multi-stage. A etapa final copia o ambiente Python já montado, não mantém `build-essential`/headers de compilação e roda a API com usuário não-root. As dependências de teste continuam na imagem de entrega porque o fluxo oficial do desafio roda lint/testes pelo próprio Compose.
+O Dockerfile usa build multi-stage e instala dependências pelo `uv.lock` com `uv sync --locked`. A etapa final copia o ambiente Python já montado, não mantém `build-essential`/headers de compilação e roda a API com usuário não-root. As dependências de teste continuam na imagem de entrega porque o fluxo oficial do desafio roda lint/testes pelo próprio Compose.
 
 O container da API também executa `alembic upgrade head` ao iniciar. O comando manual de migration fica documentado para avaliador conseguir validar o passo isoladamente.
 
@@ -100,6 +101,7 @@ docker compose up -d db
 docker compose run --rm app alembic upgrade head
 docker compose up -d app
 curl -f http://localhost:8000/health
+curl -f http://localhost:8000/ready
 curl -f http://localhost:8000/openapi.json
 docker compose run --rm --no-deps app ruff check .
 docker compose run --rm --no-deps app ruff format --check .
@@ -124,6 +126,7 @@ Variáveis principais em `.env.example`:
 
 - `DATABASE_URL`: banco usado pela API.
 - `TEST_DATABASE_URL`: banco isolado usado pelos testes Docker.
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` e `POSTGRES_TEST_DB`: valores locais usados pelo Compose.
 - `POSTGRES_PORT`: porta local opcional para expor o Postgres no host. Default: `5432`.
 - `HIBP_BREACHES_URL`: feed público da HIBP.
 - `HIBP_USER_AGENT`: obrigatório pela HIBP.
@@ -131,7 +134,7 @@ Variáveis principais em `.env.example`:
 - `PAGE_SIZE_DEFAULT` e `PAGE_SIZE_MAX`: paginação.
 - `LOG_LEVEL`: nível de logs.
 
-O Compose cria dois bancos: `breach_radar` para a aplicação e `breach_radar_test` para testes. O banco de teste é recriado pelas fixtures a cada teste.
+O Compose cria dois bancos: `breach_radar` para a aplicação e `breach_radar_test` para testes. O banco de teste é recriado pelas fixtures a cada teste. As credenciais do `.env.example` são defaults locais, não segredo real de producao.
 
 ## Endpoints
 
@@ -272,6 +275,7 @@ O workflow `.github/workflows/ci.yml` valida Compose, build, migration, smoke te
 - `httpx2` fica só em `dev`, porque a versão atual do `TestClient` da Starlette usa essa compatibilidade. O cliente HIBP de produção usa `httpx`.
 - A resposta mantém `source="remote"` para compatibilidade e adiciona `status` para diferenciar sucesso total de sucesso parcial.
 - Dados vêm da Have I Been Pwned, licenciados sob Creative Commons Attribution 4.0; por isso a API expõe `provider` no sync e o README destaca a fonte.
+- Mantive configuração por env vars, não YAML, porque Docker/CI lidam melhor com esse formato e não tem configuração grande o bastante para justificar outra camada.
 
 ### Opcionais avaliados
 

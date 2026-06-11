@@ -2,17 +2,19 @@ FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 
-RUN python -m venv /opt/venv
+COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /uvx /bin/
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml uv.lock README.md ./
 COPY TEST_PLAN.md ./
 COPY app ./app
 COPY legacy ./legacy
@@ -20,8 +22,7 @@ COPY tests ./tests
 COPY alembic ./alembic
 COPY alembic.ini ./
 
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -e ".[dev]"
+RUN uv sync --locked --extra dev
 
 FROM python:3.12-slim AS runtime
 
