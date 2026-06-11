@@ -33,6 +33,13 @@ def test_mapper_keeps_data_classes_display_value_and_search_value() -> None:
     assert row["data_classes_normalized"] == ["email addresses", "passwords", "government ids"]
 
 
+def test_mapper_ignores_non_string_data_class_items() -> None:
+    row = map_hibp_breach(hibp_breach(data_classes=["Email addresses", {"bad": "shape"}, None, 42]))
+
+    assert row["data_classes"] == ["Email addresses"]
+    assert row["data_classes_normalized"] == ["email addresses"]
+
+
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [

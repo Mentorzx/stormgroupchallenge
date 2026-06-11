@@ -1,5 +1,7 @@
 # Breach Radar
 
+[![CI](https://github.com/Mentorzx/stormgroupchallenge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mentorzx/stormgroupchallenge/actions/workflows/ci.yml)
+
 Breach Radar é uma API Python + PostgreSQL para sincronizar o catálogo público de data breaches da Have I Been Pwned (HIBP) e consultar esse cache local com filtros combináveis.
 
 A entrega segue o desafio técnico Neuroscan: `/docs`, `POST /sync`, `GET /breaches`, `GET /breaches/{name}`, persistência em PostgreSQL, sync idempotente por `Name`, validação clara e testes sem chamada real para HIBP.
@@ -121,6 +123,7 @@ Variáveis principais em `.env.example`:
 
 - `DATABASE_URL`: banco usado pela API.
 - `TEST_DATABASE_URL`: banco isolado usado pelos testes Docker.
+- `POSTGRES_PORT`: porta local opcional para expor o Postgres no host. Default: `5432`.
 - `HIBP_BREACHES_URL`: feed público da HIBP.
 - `HIBP_USER_AGENT`: obrigatório pela HIBP.
 - `HIBP_TIMEOUT_SECONDS`: timeout da chamada externa.
@@ -226,7 +229,7 @@ No Docker, os testes usam PostgreSQL real via `TEST_DATABASE_URL` e mockam HIBP 
 docker compose run --rm app pytest --cov=app --cov=legacy --cov-report=term-missing --cov-fail-under=90
 ```
 
-`httpx2` aparece apenas nas dependências de desenvolvimento porque o `TestClient` atual de FastAPI/Starlette usa essa compatiblidade para evitar warning de depreciação no ambiente de testes. A aplicação em si continua usando `httpx` no cliente HIBP.
+`httpx2` aparece apenas nas dependências de desenvolvimento porque o `TestClient` atual de FastAPI/Starlette usa essa compatiblidade no ambiente de testes. A dependência fica limitada à faixa `2.x`; a aplicação em si continua usando `httpx` no cliente HIBP.
 
 Sem `TEST_DATABASE_URL`, as fixtures usam SQLite em memória para feedback local rápido. Esse fallback não é o caminho oficial de validação da entrega.
 
@@ -252,6 +255,8 @@ O workflow `.github/workflows/ci.yml` valida Compose, build, migration, smoke te
 
 - `/sync` retorna HTTP 200 com `source="cache_fallback"` quando o feed externo falha. A decisão deixa claro que a falha foi externa e que o cache local foi preservado.
 - Campos ausentes como `DataClasses`, `Domain` e `BreachDate` são normalizados para `[]` ou `null`, preservando registros parcialmente úteis.
+- Campos da HIBP fora do contrato do desafio, como flags recentes e metadados extras, ficam preservados em `raw_payload`, mas não são expostos no schema público para não aumentar a API sem requisito.
+- `description` é devolvido como recebido da HIBP. A API não renderiza HTML; consumidores que exibirem esse campo em frontend devem sanitizar antes de usar `innerHTML` ou equivalente.
 - Duplicatas de `Name` dentro do mesmo payload remoto são ignoradas antes do upsert para evitar conflito no banco.
 - Logs são JSON e evitam despejar payload completo ou segredos.
 
@@ -266,4 +271,10 @@ A alternativa de menor risco foi documentar o caminho:
 
 A API da HIBP também expõe `/latestBreach`, indicado pela própria documentação como forma eficiente de saber se há breach novo antes de fazer consultas mais caras. Se o projeto virasse serviço contínuo, eu começaria por esse endpoint no scheduler e só adicionaria ETag depois, se medição de tráfego/latência justificasse.
 
-Referências usadas nessa decisão: documentação oficial da HIBP para `/breaches` e `/latestBreach`, MDN para `ETag`/`If-None-Match`/304, FastAPI para background tasks, e o guia de estilo Python do Google para docstrings.
+### Referências
+
+- [HIBP API v3](https://haveibeenpwned.com/API/v3): contrato do feed público, `User-Agent`, `/breaches` e `/latestBreach`.
+- [MDN ETag](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag), [If-None-Match](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match) e [304](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/304): base para a decisão de não implementar revalidação HTTP sem persistência de metadados.
+- [FastAPI dependencies with yield](https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-with-yield/): fechamento e rollback de sessão em dependências.
+- [Docker Compose interpolation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/): uso de `POSTGRES_PORT` com default no Compose.
+- [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) e [PEP 257](https://peps.python.org/pep-0257/): estilo das docstrings adicionadas.

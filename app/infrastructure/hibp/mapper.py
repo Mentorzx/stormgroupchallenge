@@ -36,7 +36,7 @@ def map_hibp_breach(payload: dict[str, Any]) -> dict[str, Any]:
     data_classes = payload.get("DataClasses") or []
     if not isinstance(data_classes, list):
         data_classes = []
-    normalized_data_classes = [str(item) for item in data_classes if item is not None]
+    normalized_data_classes = [item for item in data_classes if isinstance(item, str)]
     searchable_data_classes = [item.strip().lower() for item in normalized_data_classes]
 
     return {
