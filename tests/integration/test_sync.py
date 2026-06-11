@@ -151,3 +151,25 @@ def test_sync_ignores_bad_record_and_persists_valid_record(client: TestClient) -
     assert body["inserted"] == 1
     assert body["ignored"] == 1
     assert client.get("/breaches/Good").status_code == 200
+
+
+@respx.mock
+def test_sync_ignores_duplicate_names_from_same_payload(client: TestClient) -> None:
+    respx.get("https://haveibeenpwned.com/api/v3/breaches").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                hibp_breach(name="Duplicate", pwn_count=1),
+                hibp_breach(name="Duplicate", pwn_count=2),
+            ],
+        )
+    )
+
+    response = client.post("/sync")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["inserted"] == 1
+    assert body["ignored"] == 1
+    assert "duplicate Name" in body["errors"][0]
+    assert client.get("/breaches/Duplicate").json()["pwn_count"] == 1

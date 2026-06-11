@@ -27,6 +27,7 @@ Chamadas externas para HIBP são mockadas com `respx`. Nenhum teste depende de r
 - HTTP 403 e HTTP 500 vindos da HIBP.
 - JSON malformado.
 - Registro inválido no payload remoto é ignorado sem impedir persistência dos válidos.
+- Registro duplicado por `Name` no mesmo payload remoto é ignorado antes do upsert.
 - `name` inválido retorna 400.
 - Datas malformadas retornam 400.
 - Ranges invertidos retornam 400.
@@ -35,6 +36,7 @@ Chamadas externas para HIBP são mockadas com `respx`. Nenhum teste depende de r
 - Detalhe inexistente retorna 404.
 - Configurações inválidas falham cedo: User-Agent vazio, timeout não positivo e paginação incoerente.
 - Wildcards de SQL em `domain` (`%` e `_`) são tratados como texto literal.
+- Filtros textuais vazios retornam 400.
 
 ## Edge cases
 

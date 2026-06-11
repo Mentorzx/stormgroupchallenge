@@ -179,6 +179,7 @@ Filtros:
 - `is_verified`, `is_sensitive`, `is_spam_list`: `true` ou `false`.
 
 Parâmetro malformado retorna HTTP 400 com o campo problemático na mensagem.
+Filtros textuais vazios, como `domain=` ou `data_class=`, também retornam 400 para evitar consulta ambígua.
 
 ### `GET /breaches/{name}`
 
@@ -243,5 +244,6 @@ O workflow `.github/workflows/ci.yml` valida Compose, build, migration, smoke te
 
 - `/sync` retorna HTTP 200 com `source="cache_fallback"` quando o feed externo falha. A decisão deixa claro que a falha foi externa e que o cache local foi preservado.
 - Campos ausentes como `DataClasses`, `Domain` e `BreachDate` são normalizados para `[]` ou `null`, preservando registros parcialmente úteis.
+- Duplicatas de `Name` dentro do mesmo payload remoto são ignoradas antes do upsert para evitar conflito no banco.
 - Scheduler e ETag não foram implementados para não aumentar complexidade fora do contrato obrigatório.
 - Logs são JSON e evitam despejar payload completo ou segredos.

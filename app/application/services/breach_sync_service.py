@@ -34,16 +34,25 @@ class BreachSyncService:
                 "errors": [exc.message],
             }
 
-        rows = []
+        rows_by_name = {}
         errors = []
         ignored = 0
         for index, item in enumerate(payload):
             try:
-                rows.append(map_hibp_breach(item))
+                row = map_hibp_breach(item)
             except (HIBPMappingError, ValidationError, ValueError) as exc:
                 ignored += 1
                 errors.append(f"record[{index}] ignored: {exc}")
+                continue
 
+            name = row["name"]
+            if name in rows_by_name:
+                ignored += 1
+                errors.append(f"record[{index}] ignored: duplicate Name '{name}'")
+                continue
+            rows_by_name[name] = row
+
+        rows = list(rows_by_name.values())
         names = [row["name"] for row in rows]
         existing_names = self.repository.existing_names(names)
         inserted = sum(1 for name in names if name not in existing_names)

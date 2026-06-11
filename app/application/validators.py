@@ -5,6 +5,8 @@ from app.application.exceptions import ValidationError
 
 _NAME_RE = re.compile(r"^[A-Za-z0-9.\-]+$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_NON_NEGATIVE_INT_RE = re.compile(r"^\d+$")
+_POSITIVE_INT_RE = re.compile(r"^[1-9]\d*$")
 
 
 def validate_breach_name(name: str, *, field: str = "name") -> str:
@@ -45,34 +47,25 @@ def parse_datetime(value: str | None, *, field: str) -> datetime | None:
 def parse_non_negative_int(value: str | None, *, field: str) -> int | None:
     if value is None:
         return None
-    try:
-        parsed = int(value)
-    except ValueError as exc:
-        raise ValidationError(
-            f"{field} must be an integer greater than or equal to zero.", field=field
-        ) from exc
-    if str(parsed) != value.strip() and not (
-        value.strip().startswith("+") and str(parsed) == value.strip()[1:]
-    ):
+    if _NON_NEGATIVE_INT_RE.fullmatch(value) is None:
         raise ValidationError(
             f"{field} must be an integer greater than or equal to zero.", field=field
         )
-    if parsed < 0:
-        raise ValidationError(f"{field} must be greater than or equal to zero.", field=field)
-    return parsed
+    return int(value)
 
 
 def parse_positive_int(value: str, *, field: str) -> int:
-    try:
-        parsed = int(value)
-    except ValueError as exc:
-        raise ValidationError(f"{field} must be a positive integer.", field=field) from exc
-    if str(parsed) != value.strip() and not (
-        value.strip().startswith("+") and str(parsed) == value.strip()[1:]
-    ):
+    if _POSITIVE_INT_RE.fullmatch(value) is None:
         raise ValidationError(f"{field} must be a positive integer.", field=field)
-    if parsed < 1:
-        raise ValidationError(f"{field} must be greater than or equal to 1.", field=field)
+    return int(value)
+
+
+def parse_non_blank_text(value: str | None, *, field: str) -> str | None:
+    if value is None:
+        return None
+    parsed = value.strip()
+    if not parsed:
+        raise ValidationError(f"{field} must not be empty.", field=field)
     return parsed
 
 

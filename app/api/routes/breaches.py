@@ -7,6 +7,7 @@ from app.application.validators import (
     parse_bool,
     parse_date,
     parse_datetime,
+    parse_non_blank_text,
     parse_non_negative_int,
     parse_positive_int,
     validate_breach_name,
@@ -44,6 +45,9 @@ def list_breaches(
     parsed_page_size = parse_positive_int(raw_page_size, field="page_size")
     parsed_page_size = normalize_page_size(parsed_page_size, settings.page_size_max)
 
+    parsed_domain = parse_non_blank_text(domain, field="domain")
+    parsed_data_class = parse_non_blank_text(data_class, field="data_class")
+
     if name is not None:
         validate_breach_name(name)
 
@@ -67,13 +71,13 @@ def list_breaches(
     )
 
     filters = BreachFilters(
-        domain=domain,
+        domain=parsed_domain,
         name=name,
         breach_date_from=parsed_breach_date_from,
         breach_date_to=parsed_breach_date_to,
         added_date_from=parsed_added_date_from,
         added_date_to=parsed_added_date_to,
-        data_class=data_class,
+        data_class=parsed_data_class,
         min_pwn_count=parsed_min_pwn_count,
         max_pwn_count=parsed_max_pwn_count,
         is_verified=parsed_is_verified,

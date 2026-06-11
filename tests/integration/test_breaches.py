@@ -261,6 +261,26 @@ def test_invalid_pwn_count_returns_400(client: TestClient) -> None:
     assert "min_pwn_count" in response.json()["detail"]
 
 
+def test_integer_filters_reject_plus_sign_and_whitespace(client: TestClient) -> None:
+    plus = client.get("/breaches?min_pwn_count=%2B1")
+    whitespace = client.get("/breaches?page=%201")
+
+    assert plus.status_code == 400
+    assert "min_pwn_count" in plus.json()["detail"]
+    assert whitespace.status_code == 400
+    assert "page" in whitespace.json()["detail"]
+
+
+def test_text_filters_reject_blank_values(client: TestClient) -> None:
+    domain = client.get("/breaches?domain=%20%20")
+    data_class = client.get("/breaches?data_class=")
+
+    assert domain.status_code == 400
+    assert "domain" in domain.json()["detail"]
+    assert data_class.status_code == 400
+    assert "data_class" in data_class.json()["detail"]
+
+
 def test_invalid_bool_returns_400(client: TestClient) -> None:
     response = client.get("/breaches?is_verified=yes")
 
