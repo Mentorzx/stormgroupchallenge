@@ -7,6 +7,7 @@ from app.infrastructure.hibp.mapper import HIBPMappingError, map_hibp_breach
 from app.infrastructure.persistence.repositories import BreachRepository
 
 logger = logging.getLogger(__name__)
+HIBP_PROVIDER = "Have I Been Pwned"
 
 
 class BreachSyncService:
@@ -34,6 +35,8 @@ class BreachSyncService:
             )
             return {
                 "source": "cache_fallback",
+                "status": "cache_fallback",
+                "provider": HIBP_PROVIDER,
                 "total_received": 0,
                 "inserted": 0,
                 "updated": 0,
@@ -72,9 +75,23 @@ class BreachSyncService:
 
         self.repository.session.commit()
         duration_ms = round((time.perf_counter() - started) * 1000, 2)
+        status = "partial_success" if ignored else "success"
+        if ignored:
+            logger.warning(
+                "sync completed with ignored records",
+                extra={
+                    "event_status": status,
+                    "event_total_received": len(payload),
+                    "event_inserted": inserted,
+                    "event_updated": updated,
+                    "event_ignored": ignored,
+                    "event_error_count": len(errors),
+                },
+            )
         logger.info(
             "sync completed",
             extra={
+                "event_status": status,
                 "event_total_received": len(payload),
                 "event_inserted": inserted,
                 "event_updated": updated,
@@ -84,6 +101,8 @@ class BreachSyncService:
         )
         return {
             "source": "remote",
+            "status": status,
+            "provider": HIBP_PROVIDER,
             "total_received": len(payload),
             "inserted": inserted,
             "updated": updated,

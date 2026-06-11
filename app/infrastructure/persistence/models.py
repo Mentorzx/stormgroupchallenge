@@ -20,6 +20,7 @@ class BreachModel(Base):
     modified_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     pwn_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description_plain_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     logo_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     data_classes: Mapped[list[str]] = mapped_column(
         JSON().with_variant(JSONB(), "postgresql"), nullable=False, default=list

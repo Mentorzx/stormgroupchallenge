@@ -1,6 +1,7 @@
 # Breach Radar
 
 [![CI](https://github.com/Mentorzx/stormgroupchallenge/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Mentorzx/stormgroupchallenge/actions/workflows/ci.yml)
+![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)
 
 Breach Radar é uma API Python + PostgreSQL para sincronizar o catálogo público de data breaches da Have I Been Pwned (HIBP) e consultar esse cache local com filtros combináveis.
 
@@ -153,6 +154,8 @@ Resposta:
 ```json
 {
   "source": "remote",
+  "status": "success",
+  "provider": "Have I Been Pwned",
   "total_received": 1004,
   "inserted": 1004,
   "updated": 0,
@@ -163,6 +166,8 @@ Resposta:
 ```
 
 Os números acima são só exemplo; o total muda conforme a HIBP publica novos breaches.
+
+Quando parte do payload remoto é inválida, os registros válidos continuam sendo persistidos e a resposta usa `status="partial_success"`, com `ignored` e `errors` preenchidos. O serviço também registra warning para essa condição.
 
 Se HIBP falhar por timeout, HTTP 403/5xx ou JSON inválido, `/sync` retorna `source="cache_fallback"`, preserva dados locais e inclui a mensagem de erro. Leituras continuam usando PostgreSQL local.
 
@@ -254,11 +259,19 @@ O workflow `.github/workflows/ci.yml` valida Compose, build, migration, smoke te
 ## Decisões e limites
 
 - `/sync` retorna HTTP 200 com `source="cache_fallback"` quando o feed externo falha. A decisão deixa claro que a falha foi externa e que o cache local foi preservado.
+- Falha parcial no payload remoto preserva registros válidos, retorna `status="partial_success"` e reporta `ignored`/`errors`. Isso evita perder sincronização inteira por um item ruim.
 - Campos ausentes como `DataClasses`, `Domain` e `BreachDate` são normalizados para `[]` ou `null`, preservando registros parcialmente úteis.
 - Campos da HIBP fora do contrato do desafio, como flags recentes e metadados extras, ficam preservados em `raw_payload`, mas não são expostos no schema público para não aumentar a API sem requisito.
 - `description` é devolvido como recebido da HIBP. A API não renderiza HTML; consumidores que exibirem esse campo em frontend devem sanitizar antes de usar `innerHTML` ou equivalente.
 - Duplicatas de `Name` dentro do mesmo payload remoto são ignoradas antes do upsert para evitar conflito no banco.
 - Logs são JSON e evitam despejar payload completo ou segredos.
+
+## Tradeoffs
+
+- Mantive camadas `api/application/infrastructure` porque filtros, sync externo e persistência têm responsabilidades separadas. Evitei interfaces genéricas sem uso.
+- `httpx2` fica só em `dev`, porque a versão atual do `TestClient` da Starlette usa essa compatibilidade. O cliente HIBP de produção usa `httpx`.
+- A resposta mantém `source="remote"` para compatibilidade e adiciona `status` para diferenciar sucesso total de sucesso parcial.
+- Dados vêm da Have I Been Pwned, licenciados sob Creative Commons Attribution 4.0; por isso a API expõe `provider` no sync e o README destaca a fonte.
 
 ### Opcionais avaliados
 

@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 import respx
 from fastapi.testclient import TestClient
@@ -22,6 +24,8 @@ def test_sync_success_persists_breaches(client: TestClient, db_session: Session)
     assert route.calls[0].request.headers["User-Agent"] == "BreachRadar-Neuroscan-Challenge/1.0"
     body = response.json()
     assert body["source"] == "remote"
+    assert body["status"] == "success"
+    assert body["provider"] == "Have I Been Pwned"
     assert body["inserted"] == 2
     assert body["updated"] == 0
     assert body["local_total"] == 2
@@ -62,6 +66,8 @@ def test_sync_timeout_uses_cache_fallback(client: TestClient, seed) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["source"] == "cache_fallback"
+    assert body["status"] == "cache_fallback"
+    assert body["provider"] == "Have I Been Pwned"
     assert body["local_total"] == 1
     assert "timed out" in body["errors"][0]
     assert client.get("/breaches/Cached").status_code == 200
@@ -136,7 +142,25 @@ def test_sync_handles_missing_relevant_fields(client: TestClient) -> None:
 
 
 @respx.mock
-def test_sync_ignores_bad_record_and_persists_valid_record(client: TestClient) -> None:
+def test_sync_exposes_plain_text_description(client: TestClient) -> None:
+    payload = hibp_breach(
+        name="HtmlBreach",
+        Description="<p>Leaked <strong>passwords</strong> &amp; email addresses.</p>",
+    )
+    respx.get("https://haveibeenpwned.com/api/v3/breaches").mock(
+        return_value=httpx.Response(200, json=[payload])
+    )
+
+    assert client.post("/sync").status_code == 200
+    detail = client.get("/breaches/HtmlBreach")
+
+    assert detail.status_code == 200
+    assert detail.json()["description"] == payload["Description"]
+    assert detail.json()["description_plain_text"] == "Leaked passwords & email addresses."
+
+
+@respx.mock
+def test_sync_ignores_bad_record_and_persists_valid_record(client: TestClient, caplog) -> None:
     bad = hibp_breach(name="Bad Name With Space")
     good = hibp_breach(name="Good")
 
@@ -144,12 +168,16 @@ def test_sync_ignores_bad_record_and_persists_valid_record(client: TestClient) -
         return_value=httpx.Response(200, json=[bad, good])
     )
 
-    response = client.post("/sync")
+    with caplog.at_level(logging.WARNING):
+        response = client.post("/sync")
 
     assert response.status_code == 200
     body = response.json()
     assert body["inserted"] == 1
+    assert body["status"] == "partial_success"
     assert body["ignored"] == 1
+    assert body["errors"]
+    assert any("ignored records" in record.message for record in caplog.records)
     assert client.get("/breaches/Good").status_code == 200
 
 
@@ -170,6 +198,7 @@ def test_sync_ignores_duplicate_names_from_same_payload(client: TestClient) -> N
     assert response.status_code == 200
     body = response.json()
     assert body["inserted"] == 1
+    assert body["status"] == "partial_success"
     assert body["ignored"] == 1
     assert "duplicate Name" in body["errors"][0]
     assert client.get("/breaches/Duplicate").json()["pwn_count"] == 1

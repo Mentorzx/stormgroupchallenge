@@ -28,6 +28,7 @@ def upgrade() -> None:
         sa.Column("modified_date", sa.DateTime(timezone=True), nullable=True),
         sa.Column("pwn_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("description", sa.Text(), nullable=True),
+        sa.Column("description_plain_text", sa.Text(), nullable=True),
         sa.Column("logo_path", sa.Text(), nullable=True),
         sa.Column(
             "data_classes", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="[]"

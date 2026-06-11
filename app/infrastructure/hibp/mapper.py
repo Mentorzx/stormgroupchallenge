@@ -1,5 +1,6 @@
 import re
 from datetime import UTC, date, datetime
+from html.parser import HTMLParser
 from typing import Any
 
 from app.application.validators import validate_breach_name
@@ -10,6 +11,18 @@ class HIBPMappingError(ValueError):
 
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+class _PlainTextParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+    def text(self) -> str:
+        return " ".join("".join(self.parts).split())
 
 
 def map_hibp_breach(payload: dict[str, Any]) -> dict[str, Any]:
@@ -38,6 +51,7 @@ def map_hibp_breach(payload: dict[str, Any]) -> dict[str, Any]:
         data_classes = []
     normalized_data_classes = [item for item in data_classes if isinstance(item, str)]
     searchable_data_classes = [item.strip().lower() for item in normalized_data_classes]
+    description = _optional_str(payload.get("Description"))
 
     return {
         "name": name,
@@ -47,7 +61,8 @@ def map_hibp_breach(payload: dict[str, Any]) -> dict[str, Any]:
         "added_date": _optional_datetime(payload.get("AddedDate"), "AddedDate"),
         "modified_date": _optional_datetime(payload.get("ModifiedDate"), "ModifiedDate"),
         "pwn_count": _non_negative_int(payload.get("PwnCount"), "PwnCount"),
-        "description": _optional_str(payload.get("Description")),
+        "description": description,
+        "description_plain_text": _plain_text(description),
         "logo_path": _optional_str(payload.get("LogoPath")),
         "data_classes": normalized_data_classes,
         "data_classes_normalized": searchable_data_classes,
@@ -65,6 +80,16 @@ def _optional_str(value: Any) -> str | None:
     if value is None or value == "":
         return None
     return str(value)
+
+
+def _plain_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    parser = _PlainTextParser()
+    parser.feed(value)
+    parser.close()
+    text = parser.text()
+    return text or None
 
 
 def _optional_date(value: Any, field: str) -> date | None:

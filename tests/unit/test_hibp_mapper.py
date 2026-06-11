@@ -40,6 +40,15 @@ def test_mapper_ignores_non_string_data_class_items() -> None:
     assert row["data_classes_normalized"] == ["email addresses"]
 
 
+def test_mapper_adds_plain_text_description() -> None:
+    row = map_hibp_breach(
+        hibp_breach(Description="<p>Accounts with <em>emails</em> &amp; passwords.</p>")
+    )
+
+    assert row["description"] == "<p>Accounts with <em>emails</em> &amp; passwords.</p>"
+    assert row["description_plain_text"] == "Accounts with emails & passwords."
+
+
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [

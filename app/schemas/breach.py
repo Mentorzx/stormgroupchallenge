@@ -12,6 +12,7 @@ class BreachResponse(BaseModel):
     modified_date: datetime | None
     pwn_count: int
     description: str | None
+    description_plain_text: str | None
     logo_path: str | None
     data_classes: list[str]
     is_verified: bool
@@ -34,6 +35,8 @@ class PaginatedBreachesResponse(BaseModel):
 
 class SyncResponse(BaseModel):
     source: str
+    status: str
+    provider: str
     total_received: int
     inserted: int
     updated: int
