@@ -24,6 +24,7 @@ dev = [
   "pytest-cov>=5.0",
   "respx>=0.23",
   "ruff>=0.5",
+  # Dev-only: Starlette TestClient uses httpx2; runtime client remains httpx.
   "httpx2>=2.3,<3",
 ]
 

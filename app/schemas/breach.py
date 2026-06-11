@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class BreachResponse(BaseModel):
@@ -11,8 +11,14 @@ class BreachResponse(BaseModel):
     added_date: datetime | None
     modified_date: datetime | None
     pwn_count: int
-    description: str | None
-    description_plain_text: str | None
+    description: str | None = Field(
+        default=None,
+        description="Raw HTML description received from HIBP. Sanitize before rendering.",
+    )
+    description_plain_text: str | None = Field(
+        default=None,
+        description="Plain-text version of the HIBP description for UI/search use.",
+    )
     logo_path: str | None
     data_classes: list[str]
     is_verified: bool

@@ -1,7 +1,7 @@
 # Breach Radar
 
-[![CI](https://github.com/Mentorzx/stormgroupchallenge/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Mentorzx/stormgroupchallenge/actions/workflows/ci.yml)
-![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)
+[![CI](https://github.com/Mentorzx/breach-radar/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Mentorzx/breach-radar/actions/workflows/ci.yml)
+![Coverage gate](https://img.shields.io/badge/coverage%20gate-90%25+-brightgreen)
 
 Breach Radar é uma API Python + PostgreSQL para sincronizar o catálogo público de data breaches da Have I Been Pwned (HIBP) e consultar esse cache local com filtros combináveis.
 
@@ -237,7 +237,7 @@ No Docker, os testes usam PostgreSQL real via `TEST_DATABASE_URL` e mockam HIBP 
 docker compose run --rm app pytest --cov=app --cov=legacy --cov-report=term-missing --cov-fail-under=90
 ```
 
-`httpx2` aparece apenas nas dependências de desenvolvimento porque o `TestClient` atual de FastAPI/Starlette usa essa compatiblidade no ambiente de testes. A dependência fica limitada à faixa `2.x`; a aplicação em si continua usando `httpx` no cliente HIBP.
+`httpx2` aparece apenas nas dependências de desenvolvimento porque o `TestClient` atual de FastAPI/Starlette documenta essa compatiblidade no ambiente de testes. A dependência fica limitada à faixa `2.x`; a aplicação em si continua usando `httpx` no cliente HIBP.
 
 Sem `TEST_DATABASE_URL`, as fixtures usam SQLite em memória para feedback local rápido. Esse fallback não é o caminho oficial de validação da entrega.
 
@@ -264,18 +264,21 @@ O workflow `.github/workflows/ci.yml` valida Compose, build, migration, smoke te
 - `/sync` retorna HTTP 200 com `source="cache_fallback"` quando o feed externo falha. A decisão deixa claro que a falha foi externa e que o cache local foi preservado.
 - Falha parcial no payload remoto preserva registros válidos, retorna `status="partial_success"` e reporta `ignored`/`errors`. Isso evita perder sincronização inteira por um item ruim.
 - Campos ausentes como `DataClasses`, `Domain` e `BreachDate` são normalizados para `[]` ou `null`, preservando registros parcialmente úteis.
+- Campos obrigatórios ou tipados de forma insegura no payload remoto são ignorados com erro reportado. O mapper não transforma `PwnCount="12"` ou `Title=123` em dado válido, porque isso esconderia problema do provider.
 - Campos da HIBP fora do contrato do desafio, como flags recentes e metadados extras, ficam preservados em `raw_payload`, mas não são expostos no schema público para não aumentar a API sem requisito.
-- `description` é devolvido como recebido da HIBP. A API não renderiza HTML; consumidores que exibirem esse campo em frontend devem sanitizar antes de usar `innerHTML` ou equivalente.
+- `description` é devolvido como HTML recebido da HIBP, e `description_plain_text` existe para consumo mais seguro em UI simples. A API não renderiza HTML; consumidores que exibirem o campo raw devem sanitizar antes de usar `innerHTML` ou equivalente.
 - Duplicatas de `Name` dentro do mesmo payload remoto são ignoradas antes do upsert para evitar conflito no banco.
 - Logs são JSON e evitam despejar payload completo ou segredos.
 
 ## Tradeoffs
 
 - Mantive camadas `api/application/infrastructure` porque filtros, sync externo e persistência têm responsabilidades separadas. Evitei interfaces genéricas sem uso.
-- `httpx2` fica só em `dev`, porque a versão atual do `TestClient` da Starlette usa essa compatibilidade. O cliente HIBP de produção usa `httpx`.
+- `httpx2` fica só em `dev`, porque a documentação atual da Starlette informa que o `TestClient` é construído em cima dele. O cliente HIBP de produção usa `httpx`.
+- Os filtros de query são parseados manualmente para devolver HTTP 400 com mensagem controlada, como o desafio pede. Tipar tudo direto no FastAPI deixaria o Swagger mais bonito, mas tende a voltar 422 em erros de query.
 - A resposta mantém `source="remote"` para compatibilidade e adiciona `status` para diferenciar sucesso total de sucesso parcial.
 - Dados vêm da Have I Been Pwned, licenciados sob Creative Commons Attribution 4.0; por isso a API expõe `provider` no sync e o README destaca a fonte.
 - Mantive configuração por env vars, não YAML, porque Docker/CI lidam melhor com esse formato e não tem configuração grande o bastante para justificar outra camada.
+- Contadores de `inserted`/`updated` são calculados antes do upsert. Em dois syncs simultâneos, o banco continua idempotente, mas os números podem sair imprecisos; para produção, eu colocaria lock de sync no banco.
 
 ### Opcionais avaliados
 
@@ -291,6 +294,7 @@ A API da HIBP também expõe `/latestBreach`, indicado pela própria documentaç
 ### Referências
 
 - [HIBP API v3](https://haveibeenpwned.com/API/v3): contrato do feed público, `User-Agent`, `/breaches` e `/latestBreach`.
+- [Starlette TestClient](https://starlette.dev/testclient/): motivação para manter `httpx2` limitado às dependências de desenvolvimento.
 - [MDN ETag](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag), [If-None-Match](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match) e [304](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/304): base para a decisão de não implementar revalidação HTTP sem persistência de metadados.
 - [FastAPI dependencies with yield](https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-with-yield/): fechamento e rollback de sessão em dependências.
 - [Docker Compose interpolation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/): uso de `POSTGRES_PORT` com default no Compose.

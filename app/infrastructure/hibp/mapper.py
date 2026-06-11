@@ -51,19 +51,19 @@ def map_hibp_breach(payload: dict[str, Any]) -> dict[str, Any]:
         data_classes = []
     normalized_data_classes = [item for item in data_classes if isinstance(item, str)]
     searchable_data_classes = [item.strip().lower() for item in normalized_data_classes]
-    description = _optional_str(payload.get("Description"))
+    description = _optional_str(payload.get("Description"), "Description")
 
     return {
         "name": name,
-        "title": _optional_str(payload.get("Title")) or name,
-        "domain": _optional_str(payload.get("Domain")),
+        "title": _optional_str(payload.get("Title"), "Title") or name,
+        "domain": _optional_str(payload.get("Domain"), "Domain"),
         "breach_date": _optional_date(payload.get("BreachDate"), "BreachDate"),
         "added_date": _optional_datetime(payload.get("AddedDate"), "AddedDate"),
         "modified_date": _optional_datetime(payload.get("ModifiedDate"), "ModifiedDate"),
         "pwn_count": _non_negative_int(payload.get("PwnCount"), "PwnCount"),
         "description": description,
         "description_plain_text": _plain_text(description),
-        "logo_path": _optional_str(payload.get("LogoPath")),
+        "logo_path": _optional_str(payload.get("LogoPath"), "LogoPath"),
         "data_classes": normalized_data_classes,
         "data_classes_normalized": searchable_data_classes,
         "is_verified": _bool(payload.get("IsVerified"), "IsVerified"),
@@ -76,10 +76,12 @@ def map_hibp_breach(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _optional_str(value: Any) -> str | None:
+def _optional_str(value: Any, field: str) -> str | None:
     if value is None or value == "":
         return None
-    return str(value)
+    if not isinstance(value, str):
+        raise HIBPMappingError(f"{field} must be a string")
+    return value
 
 
 def _plain_text(value: str | None) -> str | None:
@@ -122,13 +124,11 @@ def _non_negative_int(value: Any, field: str) -> int:
         return 0
     if isinstance(value, bool):
         raise HIBPMappingError(f"{field} must be an integer")
-    try:
-        parsed = int(value)
-    except (TypeError, ValueError) as exc:
-        raise HIBPMappingError(f"{field} must be an integer") from exc
-    if parsed < 0:
+    if not isinstance(value, int):
+        raise HIBPMappingError(f"{field} must be an integer")
+    if value < 0:
         raise HIBPMappingError(f"{field} must be greater than or equal to zero")
-    return parsed
+    return value
 
 
 def _bool(value: Any, field: str) -> bool:
