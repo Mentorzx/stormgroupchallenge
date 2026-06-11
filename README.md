@@ -58,6 +58,8 @@ Serviços:
 - `app`: FastAPI/Uvicorn na porta `8000`.
 - `db`: PostgreSQL 16 na porta `5432`.
 
+O Compose fixa o projeto como `breach-radar`, evitando nomes gerados a partir da pasta local.
+
 O container da API também executa `alembic upgrade head` ao iniciar. O comando manual de migration fica documentado para avaliador conseguir validar o passo isoladamente.
 
 Para limpar banco e volumes:
@@ -221,6 +223,8 @@ No Docker, os testes usam PostgreSQL real via `TEST_DATABASE_URL` e mockam HIBP 
 ```bash
 docker compose run --rm app pytest --cov=app --cov=legacy --cov-report=term-missing --cov-fail-under=90
 ```
+
+`httpx2` aparece apenas nas dependências de desenvolvimento porque o `TestClient` atual de FastAPI/Starlette usa essa compatiblidade para evitar warning de depreciação no ambiente de testes. A aplicação em si continua usando `httpx` no cliente HIBP.
 
 Sem `TEST_DATABASE_URL`, as fixtures usam SQLite em memória para feedback local rápido. Esse fallback não é o caminho oficial de validação da entrega.
 

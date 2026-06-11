@@ -50,7 +50,7 @@ Chamadas externas para HIBP são mockadas com `respx`. Nenhum teste depende de r
 
 ## O que não foi testado
 
-- Performance com centenas de milhares de registros. O catálogo esperado fica na ordem de mil itens, e o desafio foca correção dos filtros.
+- Performance com centenas de milhares de registros. O catálogo esperado tem cerca de centenas de itens, e o desafio foca correção dos filtros.
 - Scheduler automático, porque não foi implementado.
 - ETag/If-None-Match, porque não foi implementado.
 - Chamada real à HIBP em CI, por decisão explícita do desafio.
