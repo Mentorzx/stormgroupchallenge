@@ -37,12 +37,12 @@ def map_hibp_breach(payload: dict[str, Any]) -> dict[str, Any]:
         "description": _optional_str(payload.get("Description")),
         "logo_path": _optional_str(payload.get("LogoPath")),
         "data_classes": normalized_data_classes,
-        "is_verified": _bool(payload.get("IsVerified")),
-        "is_fabricated": _bool(payload.get("IsFabricated")),
-        "is_sensitive": _bool(payload.get("IsSensitive")),
-        "is_retired": _bool(payload.get("IsRetired")),
-        "is_spam_list": _bool(payload.get("IsSpamList")),
-        "is_malware": _bool(payload.get("IsMalware")),
+        "is_verified": _bool(payload.get("IsVerified"), "IsVerified"),
+        "is_fabricated": _bool(payload.get("IsFabricated"), "IsFabricated"),
+        "is_sensitive": _bool(payload.get("IsSensitive"), "IsSensitive"),
+        "is_retired": _bool(payload.get("IsRetired"), "IsRetired"),
+        "is_spam_list": _bool(payload.get("IsSpamList"), "IsSpamList"),
+        "is_malware": _bool(payload.get("IsMalware"), "IsMalware"),
         "raw_payload": payload,
     }
 
@@ -92,5 +92,9 @@ def _non_negative_int(value: Any, field: str) -> int:
     return parsed
 
 
-def _bool(value: Any) -> bool:
-    return bool(value) if isinstance(value, bool) else False
+def _bool(value: Any, field: str) -> bool:
+    if value is None:
+        return False
+    if not isinstance(value, bool):
+        raise HIBPMappingError(f"{field} must be a boolean")
+    return value

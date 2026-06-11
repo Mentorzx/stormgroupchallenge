@@ -146,14 +146,16 @@ Resposta:
 ```json
 {
   "source": "remote",
-  "total_received": 800,
-  "inserted": 800,
+  "total_received": 1004,
+  "inserted": 1004,
   "updated": 0,
   "ignored": 0,
-  "local_total": 800,
+  "local_total": 1004,
   "errors": []
 }
 ```
+
+Os números acima são só exemplo; o total muda conforme a HIBP publica novos breaches.
 
 Se HIBP falhar por timeout, HTTP 403/5xx ou JSON inválido, `/sync` retorna `source="cache_fallback"`, preserva dados locais e inclui a mensagem de erro. Leituras continuam usando PostgreSQL local.
 

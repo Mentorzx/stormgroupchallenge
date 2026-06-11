@@ -50,6 +50,7 @@ class BreachSyncService:
                 ignored += 1
                 errors.append(f"record[{index}] ignored: duplicate Name '{name}'")
                 continue
+            # Keep first record when the same payload repeats a Name; later dupes are skiped.
             rows_by_name[name] = row
 
         rows = list(rows_by_name.values())

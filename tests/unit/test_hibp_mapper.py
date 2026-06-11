@@ -35,6 +35,7 @@ def test_mapper_normalizes_non_list_data_classes_to_empty_list() -> None:
         ("PwnCount", True, "integer"),
         ("PwnCount", "many", "integer"),
         ("PwnCount", -1, "greater than or equal to zero"),
+        ("IsVerified", "true", "boolean"),
     ],
 )
 def test_mapper_rejects_malformed_fields(field: str, value, message: str) -> None:
