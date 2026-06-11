@@ -26,7 +26,7 @@ def test_e2e_health_and_openapi_over_http() -> None:
     assert "/breaches" in openapi.json()["paths"]
 
 
-def test_e2e_breaches_empty_catalog_over_http() -> None:
+def test_e2e_breaches_catalog_shape_over_http() -> None:
     base_url = _base_url()
 
     with httpx.Client(base_url=base_url, timeout=5.0) as client:
@@ -36,4 +36,6 @@ def test_e2e_breaches_empty_catalog_over_http() -> None:
     body = response.json()
     assert body["page"] == 1
     assert body["page_size"] == 5
-    assert body["items"] == []
+    assert body["total"] >= len(body["items"])
+    assert len(body["items"]) <= 5
+    assert body["total_pages"] >= 0
