@@ -81,6 +81,18 @@ def test_filter_domain_is_partial_case_insensitive_and_excludes_null(
     assert names(response.json()) == ["Dropbox"]
 
 
+def test_filter_domain_treats_like_wildcards_as_literals(client: TestClient, seed) -> None:
+    seed_catalog(seed)
+
+    percent = client.get("/breaches?domain=%25")
+    underscore = client.get("/breaches?domain=_")
+
+    assert percent.status_code == 200
+    assert percent.json()["items"] == []
+    assert underscore.status_code == 200
+    assert underscore.json()["items"] == []
+
+
 def test_filter_name_exact(client: TestClient, seed) -> None:
     seed_catalog(seed)
 
@@ -104,6 +116,17 @@ def test_filter_added_date_inclusive_window(client: TestClient, seed) -> None:
 
     response = client.get(
         "/breaches?added_date_from=2016-08-31T00:00:00Z&added_date_to=2016-08-31T00:00:00Z"
+    )
+
+    assert response.status_code == 200
+    assert names(response.json()) == ["Dropbox"]
+
+
+def test_filter_added_date_normalizes_naive_datetime_to_utc(client: TestClient, seed) -> None:
+    seed_catalog(seed)
+
+    response = client.get(
+        "/breaches?added_date_from=2016-08-31T00:00:00&added_date_to=2016-08-31T00:00:00Z"
     )
 
     assert response.status_code == 200

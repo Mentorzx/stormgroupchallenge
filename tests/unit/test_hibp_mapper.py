@@ -28,6 +28,8 @@ def test_mapper_normalizes_non_list_data_classes_to_empty_list() -> None:
     [
         ("BreachDate", 123, "YYYY-MM-DD"),
         ("BreachDate", "not-a-date", "YYYY-MM-DD"),
+        ("BreachDate", "20200101", "YYYY-MM-DD"),
+        ("BreachDate", "2020-W01-1", "YYYY-MM-DD"),
         ("AddedDate", 123, "ISO 8601"),
         ("AddedDate", "not-a-datetime", "ISO 8601"),
         ("PwnCount", True, "integer"),

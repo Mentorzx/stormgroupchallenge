@@ -28,8 +28,14 @@ jobs:
 
       - name: Smoke test
         run: |
-          curl -f http://localhost:8000/health
-          curl -f http://localhost:8000/openapi.json
+          for attempt in {1..30}; do
+            if curl -fsS http://localhost:8000/health && curl -fsS http://localhost:8000/openapi.json > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs app
+          exit 1
 
       - name: End-to-end tests
         run: docker compose exec -T -e E2E_BASE_URL=http://localhost:8000 app pytest tests/e2e

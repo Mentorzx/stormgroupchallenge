@@ -34,6 +34,7 @@ Chamadas externas para HIBP são mockadas com `respx`. Nenhum teste depende de r
 - Booleanos fora de `true`/`false` retornam 400.
 - Detalhe inexistente retorna 404.
 - Configurações inválidas falham cedo: User-Agent vazio, timeout não positivo e paginação incoerente.
+- Wildcards de SQL em `domain` (`%` e `_`) são tratados como texto literal.
 
 ## Edge cases
 
@@ -42,6 +43,7 @@ Chamadas externas para HIBP são mockadas com `respx`. Nenhum teste depende de r
 - Registro sem `BreachDate`.
 - Limite superior de `BreachDate` inclusivo.
 - Query de domínio com capitalização diferente.
+- `added_date` sem offset explícito é normalizado para UTC para evitar comparação ambígua.
 - Paginação sem perda de itens no módulo legado.
 
 ## O que não foi testado

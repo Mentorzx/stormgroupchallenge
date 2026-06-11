@@ -1,4 +1,5 @@
-from datetime import date, datetime
+import re
+from datetime import UTC, date, datetime
 from typing import Any
 
 from app.application.validators import validate_breach_name
@@ -6,6 +7,9 @@ from app.application.validators import validate_breach_name
 
 class HIBPMappingError(ValueError):
     """Raised when an HIBP record cannot be mapped safely."""
+
+
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def map_hibp_breach(payload: dict[str, Any]) -> dict[str, Any]:
@@ -52,7 +56,7 @@ def _optional_str(value: Any) -> str | None:
 def _optional_date(value: Any, field: str) -> date | None:
     if value in (None, ""):
         return None
-    if not isinstance(value, str):
+    if not isinstance(value, str) or _DATE_RE.fullmatch(value) is None:
         raise HIBPMappingError(f"{field} must be YYYY-MM-DD")
     try:
         return date.fromisoformat(value)
@@ -66,9 +70,12 @@ def _optional_datetime(value: Any, field: str) -> datetime | None:
     if not isinstance(value, str):
         raise HIBPMappingError(f"{field} must be ISO 8601")
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as exc:
         raise HIBPMappingError(f"{field} must be ISO 8601") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed
 
 
 def _non_negative_int(value: Any, field: str) -> int:

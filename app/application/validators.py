@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from app.application.exceptions import ValidationError
 
@@ -34,9 +34,12 @@ def parse_datetime(value: str | None, *, field: str) -> datetime | None:
         return None
     normalized = value.replace("Z", "+00:00")
     try:
-        return datetime.fromisoformat(normalized)
+        parsed = datetime.fromisoformat(normalized)
     except ValueError as exc:
         raise ValidationError(f"{field} must be a valid ISO 8601 datetime.", field=field) from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed
 
 
 def parse_non_negative_int(value: str | None, *, field: str) -> int | None:

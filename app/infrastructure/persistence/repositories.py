@@ -102,9 +102,9 @@ class BreachRepository:
         if filters.name is not None:
             stmt = stmt.where(BreachModel.name == filters.name)
         if filters.domain is not None:
-            pattern = f"%{filters.domain.lower()}%"
             stmt = stmt.where(
-                BreachModel.domain.is_not(None), func.lower(BreachModel.domain).like(pattern)
+                BreachModel.domain.is_not(None),
+                func.lower(BreachModel.domain).contains(filters.domain.lower(), autoescape=True),
             )
         if filters.breach_date_from is not None:
             stmt = stmt.where(BreachModel.breach_date >= filters.breach_date_from)

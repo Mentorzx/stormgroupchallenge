@@ -170,10 +170,10 @@ curl "http://localhost:8000/breaches?is_verified=true&is_sensitive=false&is_spam
 
 Filtros:
 
-- `domain`: parcial, case-insensitive, não casa registros sem domínio.
+- `domain`: parcial, case-insensitive, trata `%` e `_` como texto literal e não casa registros sem domínio.
 - `name`: busca exata, aceita letras, dígitos, ponto e hífen.
 - `breach_date_from` / `breach_date_to`: `YYYY-MM-DD`, inclusivo.
-- `added_date_from` / `added_date_to`: ISO 8601, inclusivo.
+- `added_date_from` / `added_date_to`: ISO 8601, inclusivo; valores sem offset são normalizados como UTC.
 - `data_class`: case-insensitive contra cada item de `DataClasses`.
 - `min_pwn_count` / `max_pwn_count`: inteiros `>= 0`.
 - `is_verified`, `is_sensitive`, `is_spam_list`: `true` ou `false`.
