@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Compose file
+        run: docker compose config
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Start database
+        run: docker compose up -d db
+
+      - name: Run migrations
+        run: docker compose run --rm app alembic upgrade head
+
+      - name: Start API
+        run: docker compose up -d app
+
+      - name: Smoke test
+        run: |
+          curl -f http://localhost:8000/health
+          curl -f http://localhost:8000/openapi.json
+
+      - name: End-to-end tests
+        run: docker compose exec -T -e E2E_BASE_URL=http://localhost:8000 app pytest tests/e2e
+
+      - name: Lint
+        run: docker compose run --rm --no-deps app ruff check .
+
+      - name: Format check
+        run: docker compose run --rm --no-deps app ruff format --check .
+
+      - name: Tests with coverage
+        run: docker compose run --rm app pytest --cov=app --cov=legacy --cov-report=term-missing --cov-fail-under=90
+
+      - name: Compile check
+        run: docker compose run --rm --no-deps app python -m compileall -q app legacy tests
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
