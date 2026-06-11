@@ -9,12 +9,23 @@ logger = logging.getLogger(__name__)
 
 
 class HIBPClient:
+    """Small HTTP client for the public HIBP breaches feed."""
+
     def __init__(self, *, url: str, user_agent: str, timeout_seconds: float) -> None:
         self.url = url
         self.user_agent = user_agent
         self.timeout_seconds = timeout_seconds
 
     def fetch_breaches(self) -> list[dict[str, Any]]:
+        """Fetch the raw breach catalog from HIBP.
+
+        Returns:
+            A list of raw breach dictionaries.
+
+        Raises:
+            ExternalServiceError: If the request fails, returns an HTTP error,
+                returns malformed JSON, or does not return a JSON array.
+        """
         headers = {"User-Agent": self.user_agent}
         try:
             with httpx.Client(timeout=self.timeout_seconds, headers=headers) as client:

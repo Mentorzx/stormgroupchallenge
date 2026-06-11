@@ -10,11 +10,19 @@ logger = logging.getLogger(__name__)
 
 
 class BreachSyncService:
+    """Coordinates fetching, mapping and persisting the breach catalog."""
+
     def __init__(self, *, client: HIBPClient, repository: BreachRepository) -> None:
         self.client = client
         self.repository = repository
 
     def sync(self) -> dict:
+        """Run one manual synchronization.
+
+        Returns:
+            Summary used by the `/sync` response, including source, counters and
+            controlled mapping errors.
+        """
         started = time.perf_counter()
         try:
             payload = self.client.fetch_breaches()

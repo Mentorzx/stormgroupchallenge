@@ -10,6 +10,18 @@ _POSITIVE_INT_RE = re.compile(r"^[1-9]\d*$")
 
 
 def validate_breach_name(name: str, *, field: str = "name") -> str:
+    """Validate the HIBP breach slug used by routes and persistence.
+
+    Args:
+        name: Candidate breach name.
+        field: Field name used in the validation error.
+
+    Returns:
+        The original name when it matches the accepted slug format.
+
+    Raises:
+        ValidationError: If the name is blank or contains unsupported characters.
+    """
     if not name or _NAME_RE.fullmatch(name) is None:
         raise ValidationError(
             f"{field} must be a non-empty slug containing only letters, digits, '.' and '-'.",
@@ -19,6 +31,18 @@ def validate_breach_name(name: str, *, field: str = "name") -> str:
 
 
 def parse_date(value: str | None, *, field: str) -> date | None:
+    """Parse a strict `YYYY-MM-DD` query parameter.
+
+    Args:
+        value: Raw query parameter value.
+        field: Field name used in the validation error.
+
+    Returns:
+        Parsed date, or `None` when the parameter was omitted.
+
+    Raises:
+        ValidationError: If the value is not a calendar date in `YYYY-MM-DD` form.
+    """
     if value is None:
         return None
     if _DATE_RE.fullmatch(value) is None:
@@ -32,6 +56,18 @@ def parse_date(value: str | None, *, field: str) -> date | None:
 
 
 def parse_datetime(value: str | None, *, field: str) -> datetime | None:
+    """Parse an ISO 8601 datetime and normalize naive values to UTC.
+
+    Args:
+        value: Raw query parameter value.
+        field: Field name used in the validation error.
+
+    Returns:
+        Timezone-aware datetime, or `None` when the parameter was omitted.
+
+    Raises:
+        ValidationError: If the value cannot be parsed as ISO 8601.
+    """
     if value is None:
         return None
     normalized = value.replace("Z", "+00:00")
@@ -70,6 +106,18 @@ def parse_non_blank_text(value: str | None, *, field: str) -> str | None:
 
 
 def parse_bool(value: str | None, *, field: str) -> bool | None:
+    """Parse a boolean query parameter without accepting loose aliases.
+
+    Args:
+        value: Raw query parameter value.
+        field: Field name used in the validation error.
+
+    Returns:
+        `True`, `False`, or `None` when the parameter was omitted.
+
+    Raises:
+        ValidationError: If the value is not exactly `true` or `false`.
+    """
     if value is None:
         return None
     lowered = value.lower()
@@ -89,6 +137,11 @@ def validate_ranges(
     min_pwn_count: int | None,
     max_pwn_count: int | None,
 ) -> None:
+    """Reject inverted filter ranges before they reach the repository.
+
+    Raises:
+        ValidationError: If a lower bound is greater than its matching upper bound.
+    """
     if breach_date_from and breach_date_to and breach_date_from > breach_date_to:
         raise ValidationError(
             "breach_date_from cannot be after breach_date_to.", field="breach_date_from"

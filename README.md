@@ -251,5 +251,17 @@ O workflow `.github/workflows/ci.yml` valida Compose, build, migration, smoke te
 - `/sync` retorna HTTP 200 com `source="cache_fallback"` quando o feed externo falha. A decisão deixa claro que a falha foi externa e que o cache local foi preservado.
 - Campos ausentes como `DataClasses`, `Domain` e `BreachDate` são normalizados para `[]` ou `null`, preservando registros parcialmente úteis.
 - Duplicatas de `Name` dentro do mesmo payload remoto são ignoradas antes do upsert para evitar conflito no banco.
-- Scheduler e ETag não foram implementados para não aumentar complexidade fora do contrato obrigatório.
 - Logs são JSON e evitam despejar payload completo ou segredos.
+
+### Opcionais avaliados
+
+Scheduler automático e ETag/If-None-Match foram deixados fora da implementação principal por ROI. O desafio pede uma API reproduzível, filtros corretos, persistência, sync manual e bug hunt; esses dois opcionais melhoram operação em produção, mas também puxam estado extra, concorrência e mais cenários de teste.
+
+A alternativa de menor risco foi documentar o caminho:
+
+- **Scheduler:** criar uma tarefa periódica fora do ciclo da request, preferencialmente em um processo dedicado ou job do orquestrador. Em um deploy pequeno, APScheduler funcionaria, desde que protegido contra múltiplas instâncias executando o mesmo sync ao mesmo tempo. O job chamaria o mesmo `BreachSyncService`, com intervalo configurável por env, lock simples no banco e logs do resultado.
+- **ETag/If-None-Match:** persistir o `ETag` recebido da HIBP em uma tabela de metadados de sync, enviar `If-None-Match` na próxima chamada e tratar HTTP 304 como "sem alteração". Isso exigiria guardar também o último sync bem-sucedido, testar 200/304/erro, e manter o fallback atual quando o cache remoto não puder ser revalidado.
+
+A API da HIBP também expõe `/latestBreach`, indicado pela própria documentação como forma eficiente de saber se há breach novo antes de fazer consultas mais caras. Se o projeto virasse serviço contínuo, eu começaria por esse endpoint no scheduler e só adicionaria ETag depois, se medição de tráfego/latência justificasse.
+
+Referências usadas nessa decisão: documentação oficial da HIBP para `/breaches` e `/latestBreach`, MDN para `ETag`/`If-None-Match`/304, FastAPI para background tasks, e o guia de estilo Python do Google para docstrings.

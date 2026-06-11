@@ -13,6 +13,18 @@ _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def map_hibp_breach(payload: dict[str, Any]) -> dict[str, Any]:
+    """Convert one HIBP breach record into the persistence shape.
+
+    Args:
+        payload: Raw breach object returned by HIBP.
+
+    Returns:
+        Dictionary ready to be passed to `BreachRepository.upsert_many`.
+
+    Raises:
+        HIBPMappingError: If required fields are absent or typed unsafely.
+        ValidationError: If the HIBP `Name` does not match the local slug rules.
+    """
     if not isinstance(payload, dict):
         raise HIBPMappingError("record must be an object")
 

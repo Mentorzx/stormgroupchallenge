@@ -11,6 +11,8 @@ from app.infrastructure.persistence.models import BreachModel
 
 
 class BreachRepository:
+    """SQLAlchemy repository for breach reads and idempotent writes."""
+
     def __init__(self, session: Session) -> None:
         self.session = session
 
@@ -29,6 +31,11 @@ class BreachRepository:
         return set(rows)
 
     def upsert_many(self, rows: list[dict]) -> None:
+        """Insert or update breach rows using the active database dialect.
+
+        Args:
+            rows: Normalized breach rows keyed by `name`.
+        """
         if not rows:
             return
 
@@ -80,6 +87,16 @@ class BreachRepository:
     def list_filtered(
         self, filters: BreachFilters, *, page: int, page_size: int
     ) -> tuple[list[BreachModel], int]:
+        """Return one page after applying SQL filters and data-class matching.
+
+        Args:
+            filters: Parsed API filters.
+            page: One-based page number.
+            page_size: Maximum number of rows returned.
+
+        Returns:
+            A pair with the page items and total matching rows before pagination.
+        """
         stmt = self._base_filtered_select(filters).order_by(BreachModel.name.asc())
         candidates = list(self.session.scalars(stmt).all())
 
