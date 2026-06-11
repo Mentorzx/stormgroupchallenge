@@ -23,7 +23,6 @@ class Settings(BaseSettings):
     page_size_default: int = Field(default=20, alias="PAGE_SIZE_DEFAULT", ge=1)
     page_size_max: int = Field(default=100, alias="PAGE_SIZE_MAX", ge=1)
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
-    enable_scheduler: bool = Field(default=False, alias="ENABLE_SCHEDULER")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

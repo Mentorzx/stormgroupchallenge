@@ -29,7 +29,15 @@ def upgrade() -> None:
         sa.Column("pwn_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("logo_path", sa.Text(), nullable=True),
-        sa.Column("data_classes", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="[]"),
+        sa.Column(
+            "data_classes", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="[]"
+        ),
+        sa.Column(
+            "data_classes_normalized",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default="[]",
+        ),
         sa.Column("is_verified", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column("is_fabricated", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column("is_sensitive", sa.Boolean(), nullable=False, server_default=sa.false()),
@@ -48,9 +56,16 @@ def upgrade() -> None:
     op.create_index("ix_breaches_is_verified", "breaches", ["is_verified"])
     op.create_index("ix_breaches_is_sensitive", "breaches", ["is_sensitive"])
     op.create_index("ix_breaches_is_spam_list", "breaches", ["is_spam_list"])
+    op.create_index(
+        "ix_breaches_data_classes_normalized_gin",
+        "breaches",
+        ["data_classes_normalized"],
+        postgresql_using="gin",
+    )
 
 
 def downgrade() -> None:
+    op.drop_index("ix_breaches_data_classes_normalized_gin", table_name="breaches")
     op.drop_index("ix_breaches_is_spam_list", table_name="breaches")
     op.drop_index("ix_breaches_is_sensitive", table_name="breaches")
     op.drop_index("ix_breaches_is_verified", table_name="breaches")

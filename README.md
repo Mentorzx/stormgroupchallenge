@@ -60,6 +60,8 @@ Serviços:
 
 O Compose fixa o projeto como `breach-radar`, evitando nomes gerados a partir da pasta local.
 
+O Dockerfile usa build multi-stage. A etapa final copia o ambiente Python já montado, não mantém `build-essential`/headers de compilação e roda a API com usuário não-root. As dependências de teste continuam na imagem de entrega porque o fluxo oficial do desafio roda lint/testes pelo próprio Compose.
+
 O container da API também executa `alembic upgrade head` ao iniciar. O comando manual de migration fica documentado para avaliador conseguir validar o passo isoladamente.
 
 Para limpar banco e volumes:
@@ -212,7 +214,7 @@ Tabela principal: `breaches`.
 
 `name` é chave primária e chave de idempotência. A migration cria índices para filtros frequentes: `lower(domain)`, `breach_date`, `added_date`, `pwn_count` e flags booleanas.
 
-`data_classes` usa JSON para manter compatibilidade simples entre PostgreSQL e SQLite local. O filtro é aplicado em memória depois dos filtros SQL. Para o tamanho esperado do catálogo HIBP isso é suficiente; se o volume crescesse, o próximo passo seria JSONB/GIN e expressão SQL específica para PostgreSQL.
+`data_classes` é armazenado como JSONB no PostgreSQL, junto com `data_classes_normalized`, uma lista auxiliar em minúsculas usada só para busca. O filtro `data_class` usa containment em JSONB no PostgreSQL e índice GIN. No fallback SQLite local, o mesmo filtro continua em memória para manter feedback rápido sem depender de extensão específica.
 
 ## Testes
 

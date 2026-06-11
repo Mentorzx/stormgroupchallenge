@@ -21,6 +21,16 @@ def test_mapper_normalizes_non_list_data_classes_to_empty_list() -> None:
     row = map_hibp_breach(hibp_breach(DataClasses="Passwords"))
 
     assert row["data_classes"] == []
+    assert row["data_classes_normalized"] == []
+
+
+def test_mapper_keeps_data_classes_display_value_and_search_value() -> None:
+    row = map_hibp_breach(
+        hibp_breach(data_classes=["Email addresses", " Passwords ", "Government IDs"])
+    )
+
+    assert row["data_classes"] == ["Email addresses", " Passwords ", "Government IDs"]
+    assert row["data_classes_normalized"] == ["email addresses", "passwords", "government ids"]
 
 
 @pytest.mark.parametrize(

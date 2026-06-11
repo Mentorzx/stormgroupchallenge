@@ -13,7 +13,7 @@ Chamadas externas para HIBP são mockadas com `respx`. Nenhum teste depende de r
 - `POST /sync` persiste registros válidos.
 - `POST /sync` duas vezes atualiza sem duplicar.
 - `GET /health` retorna status simples.
-- `/openapi.json` expõe o contrato OpenAPI.
+- `/openapi.json` expõe rotas, métodos, parâmetros de filtro e schema de resposta principal.
 - Testes E2E chamam `/health`, `/openapi.json` e `/breaches` por HTTP contra a API rodando no Compose.
 - `GET /breaches` lista com paginação padrão.
 - `GET /breaches/{name}` retorna detalhe existente.
@@ -45,6 +45,7 @@ Chamadas externas para HIBP são mockadas com `respx`. Nenhum teste depende de r
 - Registro sem `BreachDate`.
 - Limite superior de `BreachDate` inclusivo.
 - Query de domínio com capitalização diferente.
+- Filtro `data_class` case-insensitive usando coluna normalizada no PostgreSQL.
 - `added_date` sem offset explícito é normalizado para UTC para evitar comparação ambígua.
 - Paginação sem perda de itens no módulo legado.
 

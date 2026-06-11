@@ -1,7 +1,8 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, bindparam, func, select
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
@@ -87,7 +88,7 @@ class BreachRepository:
     def list_filtered(
         self, filters: BreachFilters, *, page: int, page_size: int
     ) -> tuple[list[BreachModel], int]:
-        """Return one page after applying SQL filters and data-class matching.
+        """Return one page after applying filters.
 
         Args:
             filters: Parsed API filters.
@@ -98,20 +99,41 @@ class BreachRepository:
             A pair with the page items and total matching rows before pagination.
         """
         stmt = self._base_filtered_select(filters).order_by(BreachModel.name.asc())
-        candidates = list(self.session.scalars(stmt).all())
+
+        if filters.data_class and self._dialect_name() == "postgresql":
+            wanted = filters.data_class.strip().lower()
+            stmt = stmt.where(
+                BreachModel.data_classes_normalized.op("@>")(
+                    bindparam("data_class_filter", [wanted], type_=JSONB)
+                )
+            )
+            return self._page_sql(stmt, page=page, page_size=page_size)
 
         if filters.data_class:
             wanted = filters.data_class.strip().lower()
             candidates = [
                 breach
-                for breach in candidates
+                for breach in self.session.scalars(stmt).all()
                 if any(wanted == item.strip().lower() for item in (breach.data_classes or []))
             ]
+            total = len(candidates)
+            start = (page - 1) * page_size
+            end = start + page_size
+            return candidates[start:end], total
 
-        total = len(candidates)
-        start = (page - 1) * page_size
-        end = start + page_size
-        return candidates[start:end], total
+        return self._page_sql(stmt, page=page, page_size=page_size)
+
+    def _page_sql(
+        self, stmt: Select[tuple[BreachModel]], *, page: int, page_size: int
+    ) -> tuple[list[BreachModel], int]:
+        total_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
+        total = int(self.session.scalar(total_stmt) or 0)
+        offset = (page - 1) * page_size
+        rows = list(self.session.scalars(stmt.offset(offset).limit(page_size)).all())
+        return rows, total
+
+    def _dialect_name(self) -> str:
+        return self.session.bind.dialect.name if self.session.bind is not None else ""
 
     def _base_filtered_select(self, filters: BreachFilters) -> Select[tuple[BreachModel]]:
         stmt = select(BreachModel)
